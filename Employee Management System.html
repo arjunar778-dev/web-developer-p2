@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Employee Management System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --primary:#4a69bd; --primary-dark:#3c56a0; --bg:#f4f6f9; --card:#fff;
+  --text:#2c3e50; --muted:#7f8c8d; --border:#dcdde1; --success:#27ae60;
+  --danger:#e74c3c; --success-bg:#d4edda; --success-fg:#155724;
+  --danger-bg:#f8d7da; --danger-fg:#721c24;
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Arial,sans-serif}
+body{background:var(--bg);color:var(--text);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.hidden{display:none !important}
+/* login */
+#loginView{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#4a69bd,#6a89cc)}
+.login-box{background:var(--card);padding:40px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,.15);width:100%;max-width:380px;text-align:center}
+.login-box h1{font-size:20px;color:var(--primary);margin-bottom:5px}
+.login-box h2{font-size:15px;font-weight:normal;color:var(--muted);margin-bottom:20px}
+.login-box form{text-align:left}
+.login-box label{display:block;margin-top:12px;margin-bottom:4px;font-size:14px;font-weight:bold}
+.login-box input{width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px}
+.hint{margin-top:15px;font-size:12px;color:#95a5a6}
+/* navbar */
+.navbar{background:var(--primary);color:#fff;padding:15px 25px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+.nav-title{font-weight:bold}
+.nav-links a{color:#fff;text-decoration:none;margin-left:16px;font-size:14px;padding:6px 10px;border-radius:4px;cursor:pointer}
+.nav-links a.active,.nav-links a:hover{background:rgba(255,255,255,.2)}
+.container{max-width:1100px;margin:25px auto;padding:0 20px}
+h1{margin-bottom:20px}
+.page-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.alert{padding:12px 16px;border-radius:6px;margin-bottom:15px;font-size:14px}
+.alert-success{background:var(--success-bg);color:var(--success-fg)}
+.alert-error{background:var(--danger-bg);color:var(--danger-fg)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px;margin-bottom:25px}
+.stat-card{background:var(--card);border-radius:8px;padding:18px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.08);border-top:4px solid var(--primary)}
+.stat-card h3{font-size:13px;color:var(--muted);margin-bottom:8px}
+.stat-number{font-size:30px;font-weight:bold}
+.stat-active{border-top-color:var(--success)}
+.stat-inactive{border-top-color:var(--danger)}
+.quick-links{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-block;padding:9px 16px;border:none;border-radius:6px;font-size:14px;cursor:pointer;text-decoration:none;text-align:center}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dark)}
+.btn-secondary{background:#dfe6e9;color:var(--text)}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.btn-small{padding:5px 10px;font-size:12px}
+.form-card{background:var(--card);padding:22px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08);max-width:700px}
+.form-row{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.form-group{flex:1;min-width:200px}
+.form-group label{display:block;margin-bottom:5px;font-size:13px;font-weight:bold}
+.form-group input,.form-group select{width:100%;padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px}
+.form-actions{margin-top:18px;display:flex;gap:10px}
+.inline-form{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.inline-form input{padding:9px;border:1px solid var(--border);border-radius:6px;flex:1;min-width:180px}
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{padding:9px;border:1px solid var(--border);border-radius:6px;font-size:14px}
+.filter-bar input{flex:1;min-width:180px}
+.table-wrapper{overflow-x:auto;background:var(--card);border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+table{width:100%;border-collapse:collapse;min-width:700px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid #ecf0f1;font-size:13px}
+th{background:#f8f9fa}
+tr:hover td{background:#f8f9fa}
+.no-data{text-align:center;color:#95a5a6;padding:20px}
+.actions{display:flex;gap:6px}
+.badge{padding:4px 10px;border-radius:12px;font-size:12px;font-weight:bold}
+.badge-active{background:var(--success-bg);color:var(--success-fg)}
+.badge-inactive{background:var(--danger-bg);color:var(--danger-fg)}
+.edit-dept-form{display:flex;gap:8px}
+.edit-dept-form input{padding:6px;border:1px solid var(--border);border-radius:4px;flex:1}
+@media (max-width:768px){
+  .navbar{flex-direction:column;align-items:flex-start}
+  .nav-links{margin-top:8px}
+  .nav-links a{margin-left:0;margin-right:10px}
+  .form-row{flex-direction:column}
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#1a1d23;--card:#242832;--text:#e8eaed;--border:#3a3f4b;--muted:#9aa0a6}
+  tr:hover td{background:#2b3040}
+  th{background:#2b3040}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN VIEW -->
+<div id="loginView">
+  <div class="login-box">
+    <h1>Employee Management System</h1>
+    <h2>Admin Login</h2>
+    <div id="loginAlert"></div>
+    <form id="loginForm">
+      <label>Username</label>
+      <input type="text" id="loginUsername" required>
+      <label>Password</label>
+      <input type="password" id="loginPassword" required>
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:20px">Login</button>
+    </form>
+    <p class="hint">Default: admin / admin123</p>
+  </div>
+</div>
+
+<!-- APP VIEW -->
+<div id="appView" class="hidden">
+  <nav class="navbar">
+    <div class="nav-title">Employee Management System</div>
+    <div class="nav-links">
+      <a data-view="dashboard">Dashboard</a>
+      <a data-view="employees">Employees</a>
+      <a data-view="departments">Departments</a>
+      <a id="logoutBtn">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div id="alertBox"></div>
+
+    <!-- DASHBOARD -->
+    <section id="view-dashboard">
+      <h1>Dashboard</h1>
+      <div class="stats-grid">
+        <div class="stat-card"><h3>Total Employees</h3><p class="stat-number" id="statTotal">0</p></div>
+        <div class="stat-card stat-active"><h3>Active Employees</h3><p class="stat-number" id="statActive">0</p></div>
+        <div class="stat-card stat-inactive"><h3>Inactive Employees</h3><p class="stat-number" id="statInactive">0</p></div>
+        <div class="stat-card"><h3>Total Departments</h3><p class="stat-number" id="statDepts">0</p></div>
+      </div>
+      <div class="quick-links">
+        <a class="btn btn-primary" data-view="add-employee">+ Add Employee</a>
+        <a class="btn btn-secondary" data-view="employees">View Employees</a>
+        <a class="btn btn-secondary" data-view="departments">Manage Departments</a>
+        <a class="btn btn-success" id="exportBtnDash">Export to Excel</a>
+      </div>
+    </section>
+
+    <!-- EMPLOYEES LIST -->
+    <section id="view-employees" class="hidden">
+      <div class="page-header">
+        <h1>Employees</h1>
+        <div>
+          <a class="btn btn-primary" data-view="add-employee">+ Add Employee</a>
+          <a class="btn btn-success" id="exportBtnList">Export to Excel</a>
+        </div>
+      </div>
+      <form class="filter-bar" onsubmit="return false;">
+        <input type="text" id="searchInput" placeholder="Search by name, ID, or email">
+        <select id="deptFilter"><option value="">All Departments</option></select>
+        <button type="button" class="btn btn-outline" id="clearFilterBtn">Clear</button>
+      </form>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Department</th><th>Position</th><th>Salary</th><th>Joining Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="employeesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADD / EDIT EMPLOYEE -->
+    <section id="view-add-employee" class="hidden">
+      <h1 id="employeeFormTitle">Add Employee</h1>
+      <form class="form-card" id="employeeForm" novalidate>
+        <input type="hidden" id="empRowId">
+        <div class="form-row">
+          <div class="form-group"><label>Employee ID *</label><input type="text" id="employee_id" required></div>
+          <div class="form-group"><label>Full Name *</label><input type="text" id="name" required></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Email *</label><input type="email" id="email" required></div>
+          <div class="form-group"><label>Phone</label><input type="text" id="phone" maxlength="10"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Gender</label>
+            <select id="gender"><option>Male</option><option>Female</option><option>Other</option></select>
+          </div>
+          <div class="form-group"><label>Department *</label><select id="department" required></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Job Position</label><input type="text" id="position"></div>
+          <div class="form-group"><label>Salary</label><input type="number" id="salary" min="0" step="0.01"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Joining Date</label><input type="date" id="joining_date"></div>
+          <div class="form-group"><label>Status</label><select id="status"><option>Active</option><option>Inactive</option></select></div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="empSubmitBtn">Save Employee</button>
+          <a class="btn btn-outline" data-view="employees">Cancel</a>
+        </div>
+      </form>
+    </section>
+
+    <!-- DEPARTMENTS -->
+    <section id="view-departments" class="hidden">
+      <h1>Department Management</h1>
+      <form class="inline-form" id="addDeptForm">
+        <input type="text" id="newDeptName" placeholder="New department name" required>
+        <button type="submit" class="btn btn-primary">+ Add Department</button>
+      </form>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>#</th><th>Department Name</th><th>Actions</th></tr></thead>
+          <tbody id="deptTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const ADMIN = {username:"admin", password:"admin123"};
+const store = {
+  get(k, d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+function seedData(){
+  if(!localStorage.getItem('ems_seeded')){
+    store.set('departments', ['IT','HR','Finance','Sales','Marketing']);
+    store.set('employees', [
+      {id:1, employee_id:'EMP001', name:'Arun Kumar', email:'arun.kumar@example.com', phone:'9876543210', gender:'Male', department:'IT', position:'Software Developer', salary:45000, joining_date:'2023-06-15', status:'Active'},
+      {id:2, employee_id:'EMP002', name:'Priya Sharma', email:'priya.sharma@example.com', phone:'9876543211', gender:'Female', department:'HR', position:'HR Executive', salary:35000, joining_date:'2022-03-10', status:'Active'},
+      {id:3, employee_id:'EMP003', name:'Karthik Raj', email:'karthik.raj@example.com', phone:'9876543212', gender:'Male', department:'Finance', position:'Accountant', salary:40000, joining_date:'2021-11-01', status:'Active'},
+      {id:4, employee_id:'EMP004', name:'Sneha Reddy', email:'sneha.reddy@example.com', phone:'9876543213', gender:'Female', department:'Sales', position:'Sales Executive', salary:32000, joining_date:'2023-01-20', status:'Inactive'},
+      {id:5, employee_id:'EMP005', name:'Vignesh Iyer', email:'vignesh.iyer@example.com', phone:'9876543214', gender:'Male', department:'Marketing', position:'Marketing Analyst', salary:38000, joining_date:'2022-08-05', status:'Active'}
+    ]);
+    store.set('next_id', 6);
+    localStorage.setItem('ems_seeded','1');
+  }
+}
+seedData();
+
+function getEmployees(){ return store.get('employees', []); }
+function saveEmployees(list){ store.set('employees', list); }
+function getDepartments(){ return store.get('departments', []); }
+function saveDepartments(list){ store.set('departments', list); }
+function nextId(){ let n = store.get('next_id', 1); store.set('next_id', n+1); return n; }
+
+function showAlert(msg, type){
+  const box = document.getElementById('alertBox');
+  box.innerHTML = `<div class="alert alert-${type}">${msg}</div>`;
+  setTimeout(()=>{ box.innerHTML=''; }, 3000);
+}
+
+// ---------- Navigation ----------
+function showView(name){
+  document.querySelectorAll('[id^="view-"]').forEach(s => s.classList.add('hidden'));
+  document.getElementById('view-'+name).classList.remove('hidden');
+  document.querySelectorAll('.nav-links a[data-view]').forEach(a=>{
+    a.classList.toggle('active', a.dataset.view===name);
+  });
+  if(name==='dashboard') renderDashboard();
+  if(name==='employees') renderEmployeesList();
+  if(name==='add-employee' && !window._editingId){
+    document.getElementById('employeeFormTitle').textContent = 'Add Employee';
+    document.getElementById('empSubmitBtn').textContent = 'Save Employee';
+    document.getElementById('employeeForm').reset();
+    document.getElementById('empRowId').value = '';
+    populateDeptSelect();
+  }
+  if(name==='departments') renderDepartments();
+}
+document.querySelectorAll('[data-view]').forEach(el=>{
+  el.addEventListener('click', ()=>{ window._editingId=null; showView(el.dataset.view); });
+});
+
+// ---------- Login ----------
+document.getElementById('loginForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value.trim();
+  if(u===ADMIN.username && p===ADMIN.password){
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('appView').classList.remove('hidden');
+    showView('dashboard');
+  } else {
+    document.getElementById('loginAlert').innerHTML = '<div class="alert alert-error">Invalid username or password.</div>';
+  }
+});
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  document.getElementById('appView').classList.add('hidden');
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('loginForm').reset();
+});
+
+// ---------- Dashboard ----------
+function renderDashboard(){
+  const emps = getEmployees();
+  document.getElementById('statTotal').textContent = emps.length;
+  document.getElementById('statActive').textContent = emps.filter(e=>e.status==='Active').length;
+  document.getElementById('statInactive').textContent = emps.filter(e=>e.status==='Inactive').length;
+  document.getElementById('statDepts').textContent = getDepartments().length;
+}
+
+// ---------- Employees list ----------
+function populateDeptFilter(){
+  const sel = document.getElementById('deptFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Departments</option>' +
+    getDepartments().map(d=>`<option value="${d}">${d}</option>`).join('');
+  sel.value = cur;
+}
+function populateDeptSelect(){
+  const sel = document.getElementById('department');
+  sel.innerHTML = getDepartments().map(d=>`<option value="${d}">${d}</option>`).join('');
+}
+
+function renderEmployeesList(){
+  populateDeptFilter();
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const dept = document.getElementById('deptFilter').value;
+  let list = getEmployees();
+  if(search){
+    list = list.filter(e => e.name.toLowerCase().includes(search) || e.employee_id.toLowerCase().includes(search) || e.email.toLowerCase().includes(search));
+  }
+  if(dept){ list = list.filter(e => e.department === dept); }
+
+  const tbody = document.getElementById('employeesTbody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="10" class="no-data">No employees found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(e => `
+    <tr>
+      <td>${e.employee_id}</td><td>${e.name}</td><td>${e.email}</td><td>${e.phone||''}</td>
+      <td>${e.department}</td><td>${e.position||''}</td><td>${e.salary}</td><td>${e.joining_date||''}</td>
+      <td><span class="badge ${e.status==='Active'?'badge-active':'badge-inactive'}">${e.status}</span></td>
+      <td class="actions">
+        <button class="btn btn-small btn-secondary" onclick="editEmployee(${e.id})">Edit</button>
+        <button class="btn btn-small btn-danger" onclick="deleteEmployee(${e.id}, '${e.name.replace(/'/g,"\\'")}')">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+document.getElementById('searchInput').addEventListener('input', renderEmployeesList);
+document.getElementById('deptFilter').addEventListener('change', renderEmployeesList);
+document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
+  document.getElementById('searchInput').value=''; document.getElementById('deptFilter').value='';
+  renderEmployeesList();
+});
+
+// ---------- Add / Edit employee ----------
+function editEmployee(id){
+  const emp = getEmployees().find(e=>e.id===id);
+  if(!emp) return;
+  window._editingId = id;
+  showView('add-employee');
+  document.getElementById('employeeFormTitle').textContent = 'Edit Employee';
+  document.getElementById('empSubmitBtn').textContent = 'Update Employee';
+  document.getElementById('empRowId').value = id;
+  document.getElementById('employee_id').value = emp.employee_id;
+  document.getElementById('name').value = emp.name;
+  document.getElementById('email').value = emp.email;
+  document.getElementById('phone').value = emp.phone || '';
+  document.getElementById('gender').value = emp.gender || 'Male';
+  populateDeptSelect();
+  document.getElementById('department').value = emp.department;
+  document.getElementById('position').value = emp.position || '';
+  document.getElementById('salary').value = emp.salary;
+  document.getElementById('joining_date').value = emp.joining_date || '';
+  document.getElementById('status').value = emp.status;
+}
+
+function deleteEmployee(id, name){
+  if(!confirm(`Are you sure you want to delete '${name}'? This cannot be undone.`)) return;
+  saveEmployees(getEmployees().filter(e=>e.id!==id));
+  renderEmployeesList();
+  showAlert('Employee deleted successfully!', 'success');
+}
+
+document.getElementById('employeeForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const employee_id = document.getElementById('employee_id').value.trim();
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const department = document.getElementById('department').value;
+  const salary = document.getElementById('salary').value.trim();
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if(!employee_id || !name){ alert('Employee ID and Name are required.'); return; }
+  if(!email || !emailRe.test(email)){ alert('Please enter a valid email address.'); return; }
+  if(phone && !/^\d{10}$/.test(phone)){ alert('Phone number must be exactly 10 digits.'); return; }
+  if(!department){ alert('Please select a department.'); return; }
+  if(salary && Number(salary) < 0){ alert('Salary cannot be negative.'); return; }
+
+  const rowId = document.getElementById('empRowId').value;
+  const data = {
+    employee_id, name, email, phone,
+    gender: document.getElementById('gender').value,
+    department, position: document.getElementById('position').value.trim(),
+    salary: Number(salary || 0),
+    joining_date: document.getElementById('joining_date').value,
+    status: document.getElementById('status').value
+  };
+
+  let list = getEmployees();
+  if(rowId){
+    const idx = list.findIndex(e=>e.id===Number(rowId));
+    if(idx>-1) list[idx] = {...list[idx], ...data};
+    showAlert('Employee updated successfully!', 'success');
+  } else {
+    list.push({id: nextId(), ...data});
+    showAlert('Employee added successfully!', 'success');
+  }
+  saveEmployees(list);
+  window._editingId = null;
+  showView('employees');
+});
+
+// ---------- Departments ----------
+function renderDepartments(){
+  const depts = getDepartments();
+  const tbody = document.getElementById('deptTbody');
+  if(depts.length===0){
+    tbody.innerHTML = '<tr><td colspan="3" class="no-data">No departments found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = depts.map((d,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>
+        <form class="edit-dept-form" onsubmit="updateDept(event, ${i})">
+          <input type="text" value="${d}" id="dept-input-${i}">
+          <button type="submit" class="btn btn-small btn-secondary">Update</button>
+        </form>
+      </td>
+      <td><button class="btn btn-small btn-danger" onclick="deleteDept(${i}, '${d.replace(/'/g,"\\'")}')">Delete</button></td>
+    </tr>`).join('');
+}
+document.getElementById('addDeptForm').addEventListener('submit', function(e){
+  e.preventDefault();
+  const input = document.getElementById('newDeptName');
+  const name = input.value.trim();
+  if(!name) return;
+  const depts = getDepartments();
+  if(depts.includes(name)){ showAlert('That department already exists.', 'error'); return; }
+  depts.push(name);
+  saveDepartments(depts);
+  input.value='';
+  renderDepartments();
+  showAlert('Department added successfully!', 'success');
+});
+function updateDept(e, idx){
+  e.preventDefault();
+  const newName = document.getElementById('dept-input-'+idx).value.trim();
+  if(!newName) return;
+  const depts = getDepartments();
+  const oldName = depts[idx];
+  depts[idx] = newName;
+  saveDepartments(depts);
+  // keep employee records in sync with the renamed department
+  const emps = getEmployees().map(emp => emp.department===oldName ? {...emp, department:newName} : emp);
+  saveEmployees(emps);
+  renderDepartments();
+  showAlert('Department updated successfully!', 'success');
+}
+function deleteDept(idx, name){
+  if(!confirm(`Are you sure you want to delete '${name}'?`)) return;
+  const depts = getDepartments();
+  depts.splice(idx,1);
+  saveDepartments(depts);
+  renderDepartments();
+  showAlert('Department deleted successfully!', 'success');
+}
+
+// ---------- Excel export ----------
+function exportToExcel(){
+  const emps = getEmployees();
+  const rows = emps.map(e => ({
+    'Employee ID': e.employee_id, 'Name': e.name, 'Email': e.email, 'Phone': e.phone,
+    'Department': e.department, 'Position': e.position, 'Salary': e.salary,
+    'Joining Date': e.joining_date, 'Status': e.status
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+  XLSX.writeFile(wb, 'employees.xlsx');
+}
+document.getElementById('exportBtnDash').addEventListener('click', exportToExcel);
+document.getElementById('exportBtnList').addEventListener('click', exportToExcel);
+</script>
+</body>
+</html>
